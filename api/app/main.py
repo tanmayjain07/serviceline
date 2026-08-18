@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from sqlalchemy import text
 
 from app.core.config import settings
@@ -122,6 +123,17 @@ def create_app() -> FastAPI:
     app.include_router(memberships.router, prefix=prefix)
     app.include_router(invitations.router, prefix=prefix)
     app.include_router(audit.router, prefix=prefix)
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        """Send the root URL to the API docs.
+
+        Without this, anyone who types the API's host into a browser gets a bare
+        `{"detail":"Not Found"}` and reasonably concludes the server is broken.
+        It is not -- there is simply no page at the root, because the frontend is
+        served separately. A redirect costs nothing and removes the confusion.
+        """
+        return RedirectResponse(url="/docs")
 
     @app.get("/healthz", tags=["ops"])
     def healthz() -> dict[str, str]:
