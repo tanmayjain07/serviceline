@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+
+/*
+ * A small design system rather than a pile of ad-hoc utility strings.
+ *
+ * The client's reference point is Jobber: clean, dense, unfussy, obviously a
+ * tool rather than a marketing site. Everything below is chosen for legibility
+ * on a dispatcher's monitor and on a technician's phone in a basement.
+ */
+
+@theme {
+  --color-brand-50: oklch(0.97 0.02 240);
+  --color-brand-100: oklch(0.93 0.04 240);
+  --color-brand-200: oklch(0.87 0.07 240);
+  --color-brand-500: oklch(0.58 0.15 250);
+  --color-brand-600: oklch(0.51 0.16 252);
+  --color-brand-700: oklch(0.44 0.15 254);
+  --color-brand-900: oklch(0.28 0.09 256);
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Focus rings are never removed, only restyled. Dispatchers work fast and some
+   of them use the keyboard for everything. */
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-brand-600;
+}
