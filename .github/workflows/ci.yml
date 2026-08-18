@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API — lint, migrate, test
+    runs-on: ubuntu-latest
+
+    # A real PostgreSQL, not SQLite. The entire tenant isolation model is built
+    # on row-level security, which SQLite does not have -- testing against it
+    # would verify nothing that matters.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PGPASSWORD: postgres
+      DATABASE_URL: postgresql+psycopg://serviceline_app:app_ci@localhost:5432/serviceline_test
+      DATABASE_ADMIN_URL: postgresql+psycopg://serviceline_owner:owner_ci@localhost:5432/serviceline_test
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else
+      ENVIRONMENT: test
+
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: api/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Bootstrap database roles
+        run: |
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "
+            CREATE ROLE serviceline_owner LOGIN PASSWORD 'owner_ci'
+              NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+            CREATE ROLE serviceline_app LOGIN PASSWORD 'app_ci'
+              NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+          "
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -c "
+            CREATE DATABASE serviceline_test OWNER serviceline_owner;
+          "
+          psql -h localhost -U postgres -d serviceline_test -v ON_ERROR_STOP=1 -c "
+            REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+            GRANT CONNECT ON DATABASE serviceline_test TO serviceline_app;
+          "
+
+      - name: Assert the app role cannot bypass RLS
+        # If someone ever "fixes" a permissions problem by granting BYPASSRLS,
+        # the whole isolation guarantee is void and every other test becomes
+        # meaningless. Fail the build here, loudly, before that can happen.
+        run: |
+          result=$(psql -h localhost -U postgres -tAc \
+            "SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname='serviceline_app';")
+          if [ "$result" != "f" ]; then
+            echo "::error::serviceline_app can bypass row-level security"
+            exit 1
+          fi
+
+      - name: Run migrations
+        run: alembic upgrade head
+
+      - name: Test
+        run: pytest -q --cov=app --cov-report=term-missing
+
+  web:
+    name: Web — typecheck and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
