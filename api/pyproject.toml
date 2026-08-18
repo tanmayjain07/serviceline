@@ -1,0 +1,56 @@
+[project]
+name = "serviceline-api"
+version = "0.1.0"
+description = "Field service scheduling for HVAC and plumbing contractors."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+# Our own deprecation warnings are errors so they get fixed rather than
+# accumulating. Third-party ones we cannot act on are listed explicitly, so the
+# list stays short and visible instead of being silenced wholesale.
+filterwarnings = [
+    "error::DeprecationWarning",
+    # Starlette's TestClient prefers httpx2; httpx 0.28 still works correctly.
+    "ignore:Using `httpx` with `starlette.testclient`:DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["alembic/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+# extend-exclude, not exclude: plain `exclude` REPLACES ruff's defaults, which
+# would drop .venv, .git and friends and lint the whole virtualenv.
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplify
+    "C4",  # comprehensions
+    "RUF",
+]
+ignore = [
+    # FastAPI's dependency injection idiom is `x = Depends(...)` in a default
+    # argument, which B008 flags. Unavoidable with this framework.
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]  # conftest must set env vars before importing app
+# Migrations embed SQL as string literals; wrapping DDL to 88 columns hurts
+# readability more than it helps.
+"alembic/versions/*" = ["E501"]
