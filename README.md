@@ -49,7 +49,7 @@ Full reasoning and the trade-offs, including the two deliberate exceptions:
 ## Proof
 
 ```
-74 passed in 76s          pytest, 92% coverage
+78 passed in 61s          pytest, 92% coverage
 33/33 checks passed       live end-to-end smoke test over real HTTP
 ruff check: clean         ruff format: clean
 tsc --noEmit: clean       vite build: clean
@@ -136,7 +136,7 @@ App on <http://localhost:5173>, proxying `/api` to the backend.
 
 ```powershell
 cd api
-.\.venv\Scripts\python.exe -m pytest            # 74 tests
+.\.venv\Scripts\python.exe -m pytest            # 78 tests
 cd ..
 .\scripts\smoke-test.ps1                        # 33 live checks
 ```
@@ -172,14 +172,19 @@ serviceline/
 │   │   ├── services/           audit, seat limits, slugs
 │   │   ├── deps.py             session + auth + RBAC dependencies
 │   │   └── main.py             app factory + startup isolation check
-│   └── tests/                  74 tests
+│   ├── tests/                  78 tests
+│   ├── Dockerfile              pinned runtime, non-root
+│   └── docker-entrypoint.sh    migrate -> seed -> serve
 ├── web/
 │   └── src/
 │       ├── components/         layout, shared UI primitives
 │       ├── lib/                API client, auth context, types
 │       └── pages/              login, signup, invite, team, settings, audit
-├── scripts/                    database bootstrap, live smoke test
-└── docs/architecture.md        how isolation works, and six ADRs
+├── scripts/                    database bootstrap (local + cloud), smoke test
+├── render.yaml                 deployment as code
+└── docs/
+    ├── architecture.md         how isolation works, and six ADRs
+    └── deployment.md           deploying to Neon + Render
 ```
 
 ---

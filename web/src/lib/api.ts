@@ -18,7 +18,16 @@
 
 import type { TokenPair } from './types'
 
-const API_BASE = '/api/v1'
+/**
+ * In development this stays '/api/v1' and Vite proxies it to the local API, so
+ * the browser only ever talks to one origin and CORS never enters the picture.
+ *
+ * In production the frontend is a static site on a different host from the API,
+ * so the full URL is baked in at build time from VITE_API_BASE_URL. Vite
+ * substitutes this at BUILD time, not run time -- changing it therefore needs a
+ * redeploy of the frontend, not just a restart.
+ */
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
 const ACCESS_KEY = 'serviceline.access_token'
 const REFRESH_KEY = 'serviceline.refresh_token'
