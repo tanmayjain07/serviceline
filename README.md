@@ -3,6 +3,8 @@
 Multi-tenant field service scheduling for HVAC and plumbing contractors.
 **React · Python · PostgreSQL**
 
+[![CI](https://github.com/tanmayjain70/serviceline/actions/workflows/ci.yml/badge.svg)](https://github.com/tanmayjain70/serviceline/actions/workflows/ci.yml)
+
 > **Milestone 1 of 5 — the foundation.** Multi-tenancy with database-enforced
 > isolation, authentication, role-based access control, team invitations, seat
 > limits, and an append-only audit log. Customers, jobs, and the dispatch board
@@ -82,7 +84,7 @@ Full reasoning and the trade-offs, including the two deliberate exceptions:
 ## Proof
 
 ```
-87 passed in 63s          pytest, 92% coverage
+87 passed in 63s          pytest, 92% coverage, green in CI
 33/33 checks passed       local end-to-end smoke test over real HTTP
 27/27 checks passed       against the deployed demo, over the public internet
 ruff check: clean         ruff format: clean
