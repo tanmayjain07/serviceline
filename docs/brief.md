@@ -7,6 +7,10 @@
 > it is kept here rather than discarded. Nothing in this file should be read as a
 > record of paid work.
 
+The full exchange it was distilled from — the brief, the reply that questioned
+it, the answers, and the revised scope — is in
+**[brief-transcript.md](brief-transcript.md)**.
+
 Its purpose is practical: milestone 1 is built, and milestones 2 to 5 depend on
 decisions that exist nowhere in the schema. Why scheduling timezones live on the
 service address rather than the company, why invoice numbers must be gapless

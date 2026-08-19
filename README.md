@@ -221,6 +221,7 @@ serviceline/
 └── docs/
     ├── architecture.md         how isolation works, and six ADRs
     ├── brief.md                the client brief, and what changed after asking
+    ├── brief-transcript.md     the full scoping exchange it was distilled from
     └── deployment.md           deploying to Neon + Render
 ```
 
