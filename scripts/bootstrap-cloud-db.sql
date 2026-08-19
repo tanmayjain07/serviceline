@@ -31,9 +31,15 @@ DECLARE
     -- >>> EDIT THIS LINE <<<
     app_password constant text := 'CHANGE_ME_app_password';
 BEGIN
-    IF app_password = 'CHANGE_ME_app_password' THEN
+    -- Deliberately checks the shape of the value rather than comparing it to
+    -- the placeholder literal. A guard written as
+    -- `IF app_password = 'CHANGE_ME_app_password'` is silently destroyed by a
+    -- find-and-replace over this file: the guard becomes a comparison against
+    -- the real password, so it fires every time.
+    IF length(app_password) < 16 OR app_password ILIKE '%change%me%' THEN
         RAISE EXCEPTION
-            'Edit this script and set a real password before running it.';
+            'Set a real password of at least 16 characters on the line above '
+            'before running this script.';
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'serviceline_app') THEN
