@@ -24,8 +24,17 @@ TEST_ADMIN_URL = (
     "@localhost:5432/serviceline_test"
 )
 
-os.environ["DATABASE_URL"] = TEST_APP_URL
-os.environ["DATABASE_ADMIN_URL"] = TEST_ADMIN_URL
+# setdefault, not assignment. These are a convenience for running the suite on
+# a developer machine that was set up by scripts/bootstrap-db.ps1; any
+# environment that supplies its own connection strings must win. CI creates the
+# same roles with different passwords, and an unconditional assignment here
+# silently discarded them -- every CI run failed to authenticate while the
+# migration step, which reads the environment directly, passed.
+#
+# Pointing the suite at the wrong database is still caught: the assertion in
+# _migrate_test_database refuses to run against anything but serviceline_test.
+os.environ.setdefault("DATABASE_URL", TEST_APP_URL)
+os.environ.setdefault("DATABASE_ADMIN_URL", TEST_ADMIN_URL)
 os.environ["ENVIRONMENT"] = "test"
 os.environ.setdefault("JWT_SECRET", "test-only-secret-do-not-use-anywhere-else")
 
@@ -49,10 +58,17 @@ def _migrate_test_database() -> None:
 
     from alembic import command
 
-    assert "serviceline_test" in settings.database_url, (
-        "Refusing to run: tests are not pointed at serviceline_test. "
-        f"Got {settings.database_url!r}"
-    )
+    # Both URLs are checked. The admin URL is the dangerous one -- it is what
+    # Alembic connects with, and the suite truncates tables between tests. A
+    # runtime URL pointing safely at serviceline_test while the admin URL points
+    # somewhere real would destroy that database.
+    for label, url in (
+        ("DATABASE_URL", settings.database_url),
+        ("DATABASE_ADMIN_URL", settings.database_admin_url),
+    ):
+        assert "serviceline_test" in url, (
+            f"Refusing to run: {label} is not pointed at serviceline_test. Got {url!r}"
+        )
 
     cfg = Config(str(API_DIR / "alembic.ini"))
     cfg.set_main_option("script_location", str(API_DIR / "alembic"))
