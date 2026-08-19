@@ -69,6 +69,43 @@ postgresql+psycopg://serviceline_app:APPPASS@ep-xxxx.../neondb?sslmode=require
 Note the `+psycopg` after `postgresql`. SQLAlchemy needs it to select the
 driver; Neon does not include it in the string it shows you, so add it to both.
 
+### Use the direct endpoint, not the pooled one
+
+Neon hands you a **pooled** hostname containing `-pooler`. Drop that segment and
+use the direct host for both connection strings:
+
+```
+ep-something-12345-pooler.c-4.us-east-2.aws.neon.tech   <- what Neon shows
+ep-something-12345.c-4.us-east-2.aws.neon.tech          <- use this
+```
+
+The pooler is PgBouncer in transaction-pooling mode. Our tenant binding is safe
+there — `SET LOCAL` is scoped to a transaction, which PgBouncer keeps on one
+server connection — but psycopg's server-side prepared statements interact badly
+with transaction pooling, and Alembic's DDL wants a plain connection. At demo
+traffic the pooler buys nothing, and SQLAlchemy already maintains its own pool
+of five connections. Fewer moving parts wins.
+
+### The owner role has BYPASSRLS, and that is expected
+
+On Neon the default role is a member of `neon_superuser`, which carries
+`BYPASSRLS`:
+
+```
+     rolname     | is_superuser | can_bypass_rls
+-----------------+--------------+----------------
+ neondb_owner    | f            | t
+ serviceline_app | f            | f
+```
+
+This is exactly why the two-role split matters more on a managed provider than
+it would on a database you administer yourself. `FORCE ROW LEVEL SECURITY` makes
+a table's *owner* subject to its policies, but `BYPASSRLS` is a separate role
+attribute that overrides policies regardless. Since the owner role cannot be
+stripped of it on Neon, the guarantee rests entirely on the API never connecting
+as that role — which is what `verify_isolation()` checks at startup, and what
+`DATABASE_ADMIN_URL` being used only by Alembic enforces in practice.
+
 ## 3. Deploy from the blueprint
 
 1. Sign up at [render.com](https://render.com) and connect your GitHub account.
