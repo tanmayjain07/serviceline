@@ -1,9 +1,11 @@
 """Application configuration, loaded from the environment."""
 
+import json
 from functools import lru_cache
+from typing import Annotated, Any
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -39,8 +41,66 @@ class Settings(BaseSettings):
     invite_expiry_days: int = 7
     trial_days: int = 14
 
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
+    # NoDecode turns off pydantic-settings' automatic JSON decoding for this
+    # field so the validator below sees the raw string.
+    #
+    # Without it, a perfectly reasonable CORS_ORIGINS of
+    # "https://example.com" fails at import time with
+    #     SettingsError: error parsing value for field "cors_origins"
+    # because the value is not valid JSON. That message names neither the
+    # offending variable's value nor the expected format, and it kills the
+    # process before any logging is configured -- so it surfaces as a container
+    # that dies on boot for no visible reason. Accepting the obvious formats is
+    # cheaper than making everyone learn that CORS_ORIGINS must be JSON.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:5173"]
+    )
     sql_echo: bool = False
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _parse_cors_origins(cls, value: Any) -> Any:
+        """Accept a JSON array, a comma-separated list, or a single origin."""
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [cls._normalise_origin(str(item)) for item in value]
+        if not isinstance(value, str):
+            return value
+
+        text = value.strip()
+        if not text:
+            return []
+
+        # Anything opening with a JSON bracket is treated as JSON. Catching '{'
+        # as well as '[' matters: an object would otherwise fall through to the
+        # comma-splitting branch and be accepted as a single literal origin,
+        # which then silently matches nothing.
+        if text.startswith(("[", "{")):
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    f"CORS_ORIGINS looks like JSON but is not valid JSON: "
+                    f"{exc}. Either fix the JSON or use a plain "
+                    f"comma-separated list."
+                ) from None
+            if not isinstance(parsed, list):
+                raise ValueError("CORS_ORIGINS as JSON must be an array of strings")
+            return [cls._normalise_origin(str(item)) for item in parsed]
+
+        return [cls._normalise_origin(part) for part in text.split(",") if part.strip()]
+
+    @staticmethod
+    def _normalise_origin(raw: str) -> str:
+        """Trim whitespace and any trailing slash.
+
+        A browser sends `Origin: https://example.com` with no trailing slash, so
+        a configured value of `https://example.com/` never matches and every
+        request fails CORS while working fine from curl. Normalising here means
+        the trailing slash simply stops mattering.
+        """
+        return raw.strip().rstrip("/")
 
     @property
     def is_production(self) -> bool:
