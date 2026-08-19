@@ -81,6 +81,13 @@ services:
       - key: VITE_API_BASE_URL
         sync: false
 
+      # Shows the published demo logins on the sign-in page. Not a secret, and
+      # this blueprint describes only the public demo, so it is declared here
+      # rather than prompted for. With it unset, the demo panel and its
+      # credentials are tree-shaken out of the bundle entirely.
+      - key: VITE_DEMO_MODE
+        value: "true"
+
     routes:
       # Single-page app: every unmatched path must return index.html so that
       # React Router can handle it. Without this, deep links and browser refresh
