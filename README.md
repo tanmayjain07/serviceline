@@ -220,6 +220,7 @@ serviceline/
 ├── render.yaml                 deployment as code
 └── docs/
     ├── architecture.md         how isolation works, and six ADRs
+    ├── brief.md                the client brief, and what changed after asking
     └── deployment.md           deploying to Neon + Render
 ```
 
@@ -249,6 +250,12 @@ serviceline/
 Milestone 2 moves the authoritative timezone from the company to the **service
 address** — one target customer works both sides of the Ohio/Indiana line, where
 half of Indiana observes Central time.
+
+That decision, and seventeen others that shaped the schema, came out of
+questioning the brief rather than building it as written:
+**[docs/brief.md](docs/brief.md)** — including the requirements that contradicted
+each other, the ones that were far larger than they sounded, and what got cut to
+fit the budget. (The engagement is simulated; the reasoning is not.)
 
 ---
 
