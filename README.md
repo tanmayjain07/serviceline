@@ -10,6 +10,39 @@ Multi-tenant field service scheduling for HVAC and plumbing contractors.
 
 ---
 
+## Live demo
+
+**<https://serviceline-web.onrender.com>**
+
+> Hosted on a free tier that sleeps when idle, so the **first sign-in can take
+> up to a minute** while the server wakes. Everything after that is fast. The
+> login page tells you this while it waits.
+
+Two separate companies share the demo. Every account uses the password
+`demo-password`.
+
+| Account | Company | Role | What it shows |
+|---|---|---|---|
+| `owner@northline.demo` | Northline Mechanical | Owner | Everything: team, invitations, settings, audit log |
+| `tech@northline.demo` | Northline Mechanical | Technician | Restricted — the team, settings and audit pages are gone, and the API returns **403** if called directly |
+| `owner@buckeye.demo` | Buckeye Plumbing | Owner | A different company entirely |
+| `books@shared.demo` | **Both** | Accountant | One person in two companies, with the company switcher |
+
+### Try to break it
+
+That is the point of shipping two companies rather than one.
+
+1. Sign in as `owner@northline.demo`, open **Team**, and copy a membership ID
+   out of the network tab
+2. Sign in as `owner@buckeye.demo` and call
+   `PATCH /api/v1/memberships/{that-id}` with your own token
+3. You get **404** — not 403, which would confirm the row exists
+
+The database refuses to return the row at all. There is no `WHERE tenant_id`
+clause in the handler to forget.
+
+---
+
 ## The interesting part
 
 Every contractor company is a tenant, and no company may ever see another's
@@ -50,7 +83,8 @@ Full reasoning and the trade-offs, including the two deliberate exceptions:
 
 ```
 87 passed in 63s          pytest, 92% coverage
-33/33 checks passed       live end-to-end smoke test over real HTTP
+33/33 checks passed       local end-to-end smoke test over real HTTP
+27/27 checks passed       against the deployed demo, over the public internet
 ruff check: clean         ruff format: clean
 tsc --noEmit: clean       vite build: clean
 ```
