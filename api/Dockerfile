@@ -25,6 +25,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Git does not record the executable bit on Windows checkouts, so the entrypoint
+# arrives as 0644 and Docker cannot exec it. The container then dies instantly
+# with status 128 and no message explaining why. Setting the bit here makes the
+# image correct no matter how the file was checked out.
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Run as a non-root user. Nothing here needs root, and a container that does not
 # need it should not have it.
 RUN useradd --create-home --uid 10001 appuser \
