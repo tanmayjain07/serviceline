@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import { Badge, Button, Card, EmptyState, PageHeader, Spinner } from '../components/ui'
 import { api } from '../lib/api'
+import { isAuditDiff } from '../lib/types'
 import type { AuditEntry, Page } from '../lib/types'
 
 const PAGE_SIZE = 25
@@ -113,9 +114,23 @@ export default function AuditLog() {
                       <div key={field} className="flex flex-wrap gap-1.5">
                         <dt className="font-medium text-slate-600">{field}:</dt>
                         <dd className="text-slate-500">
-                          <span className="line-through">{formatValue(change.from)}</span>
-                          {' → '}
-                          <span className="text-slate-900">{formatValue(change.to)}</span>
+                          {isAuditDiff(change) ? (
+                            <>
+                              <span className="line-through">
+                                {formatValue(change.from)}
+                              </span>
+                              {' → '}
+                              <span className="text-slate-900">
+                                {formatValue(change.to)}
+                              </span>
+                            </>
+                          ) : (
+                            /* A creation, not a change. Rendering it as a diff
+                               produced the meaningless "— → —". */
+                            <span className="text-slate-900">
+                              {formatValue(change)}
+                            </span>
+                          )}
                         </dd>
                       </div>
                     ))}

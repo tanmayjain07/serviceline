@@ -97,6 +97,25 @@ export interface InvitationPreview {
   requires_signup: boolean
 }
 
+/**
+ * A single field in an audit entry.
+ *
+ * Two shapes reach the client, because two different things are being
+ * recorded. An update carries a before/after pair; a creation carries the
+ * value the row started with, where "before" would be meaningless. Modelling
+ * only the diff shape is what produced entries rendering as "role: — → —".
+ */
+export type AuditDiff = { from: unknown; to: unknown }
+export type AuditChange = AuditDiff | string | number | boolean | null
+
+export function isAuditDiff(change: AuditChange): change is AuditDiff {
+  return (
+    typeof change === 'object' &&
+    change !== null &&
+    ('from' in change || 'to' in change)
+  )
+}
+
 export interface AuditEntry {
   id: string
   action: string
@@ -105,7 +124,7 @@ export interface AuditEntry {
   entity_label: string | null
   actor_user_id: string | null
   actor_email: string | null
-  changes: Record<string, { from: unknown; to: unknown }> | null
+  changes: Record<string, AuditChange> | null
   ip_address: string | null
   created_at: string
 }
