@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 
 import AuthShell from '../components/AuthShell'
-import { Button, Spinner } from '../components/ui'
+import { Alert, Button, Spinner } from '../components/ui'
+import { ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { ROLE_LABELS } from '../lib/types'
 
@@ -17,6 +18,7 @@ export default function ChooseCompany() {
   const { me, isAuthenticated, isLoading, switchCompany, signOut } = useAuth()
   const navigate = useNavigate()
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -30,9 +32,19 @@ export default function ChooseCompany() {
 
   async function choose(tenantId: string) {
     setBusyId(tenantId)
+    setError(null)
     try {
       await switchCompany(tenantId)
       navigate('/', { replace: true })
+    } catch (caught) {
+      // Previously this had only a `finally`, so a failed switch reset the
+      // spinner and said nothing at all -- the button simply appeared to do
+      // nothing, which is exactly how the bug in switchCompany stayed hidden.
+      setError(
+        caught instanceof ApiError
+          ? caught.detail
+          : 'Could not switch company. Please try again.',
+      )
     } finally {
       setBusyId(null)
     }
@@ -48,6 +60,12 @@ export default function ChooseCompany() {
         </button>
       }
     >
+      {error && (
+        <div className="mb-4">
+          <Alert>{error}</Alert>
+        </div>
+      )}
+
       <ul className="space-y-2">
         {me?.memberships.map((membership) => (
           <li key={membership.tenant_id}>

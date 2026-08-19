@@ -36,6 +36,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+/**
+ * Defined once, at module scope, because it is needed two ways: declaratively
+ * by the hook below, and imperatively after a company switch.
+ */
+const ME_QUERY = {
+  queryKey: ['me'] as const,
+  queryFn: () => api.get<Me>('/auth/me'),
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [hasToken, setHasToken] = useState(() => Boolean(tokens.access()))
@@ -46,8 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const { data: me, isPending } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => api.get<Me>('/auth/me'),
+    ...ME_QUERY,
     enabled: hasToken,
     retry: false,
     staleTime: 30_000,
@@ -72,10 +80,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tenant_id: tenantId,
       })
       tokens.set(pair)
-      // Every cached query is scoped to the previous company, so all of it is
-      // stale. Clearing rather than invalidating avoids briefly rendering one
-      // company's data under another's name.
-      queryClient.clear()
+
+      // Everything except identity was scoped to the previous company, so drop
+      // it outright. Removing rather than invalidating avoids briefly rendering
+      // one company's data under another's name.
+      //
+      // Identity is deliberately EXCLUDED from that removal. queryClient.clear()
+      // would take the ['me'] query with it, and a mounted observer whose query
+      // has been deleted is orphaned: a later fetch creates a *new* query object
+      // that the observer is not attached to, so the component never re-renders.
+      // `me` then keeps its pre-switch value, needsCompanyChoice stays true, and
+      // Protected bounces every navigation straight back to the chooser -- the
+      // switch succeeding silently while the app never notices.
+      queryClient.removeQueries({
+        predicate: (query) => query.queryKey[0] !== 'me',
+      })
+
+      // Refetch in place, so the existing observer receives the result. Awaiting
+      // it lets a caller navigate the moment this resolves rather than racing an
+      // in-flight request.
+      await queryClient.refetchQueries({ queryKey: ['me'], exact: true })
     },
     [queryClient],
   )
