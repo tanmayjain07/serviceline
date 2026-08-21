@@ -86,3 +86,88 @@ SEAT_LIMITS: dict[Plan, int | None] = {
     Plan.PRO: 20,
     Plan.BUSINESS: None,
 }
+
+
+# ---------------------------------------------------------------------------
+# Milestone 2: customers, service addresses, and jobs
+# ---------------------------------------------------------------------------
+
+
+class CustomerKind(enum.StrEnum):
+    RESIDENTIAL = "residential"
+    COMPANY = "company"
+
+
+class JobType(enum.StrEnum):
+    """Constrained rather than free text.
+
+    "Revenue by job type" is one of the reports the client asked for, and a
+    free-text field makes that report meaningless the first time someone types
+    "maintenence". Tenants who need finer categories get them in a later
+    milestone as a per-tenant lookup table.
+    """
+
+    INSTALL = "install"
+    REPAIR = "repair"
+    MAINTENANCE = "maintenance"
+    INSPECTION = "inspection"
+    EMERGENCY = "emergency"
+    OTHER = "other"
+
+
+class JobPriority(enum.StrEnum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    EMERGENCY = "emergency"
+
+
+class JobStatus(enum.StrEnum):
+    UNSCHEDULED = "unscheduled"
+    SCHEDULED = "scheduled"
+    EN_ROUTE = "en_route"
+    IN_PROGRESS = "in_progress"
+    COMPLETE = "complete"
+    INVOICED = "invoiced"
+    CLOSED = "closed"
+    CANCELED = "canceled"
+
+
+# The status field is a state machine, not a free-form label. Writing the legal
+# transitions down here -- rather than trusting each caller to be sensible --
+# means a job cannot jump from Unscheduled straight to Invoiced, and the
+# technician mobile view in milestone 3 cannot reopen a closed job by replaying
+# a stale request.
+#
+# CANCELED is reachable from anywhere that has not yet been invoiced: work does
+# get called off, but money that has been billed needs a credit note rather than
+# a status change.
+JOB_STATUS_TRANSITIONS: dict[JobStatus, frozenset[JobStatus]] = {
+    JobStatus.UNSCHEDULED: frozenset({JobStatus.SCHEDULED, JobStatus.CANCELED}),
+    JobStatus.SCHEDULED: frozenset(
+        {JobStatus.UNSCHEDULED, JobStatus.EN_ROUTE, JobStatus.CANCELED}
+    ),
+    JobStatus.EN_ROUTE: frozenset(
+        {JobStatus.IN_PROGRESS, JobStatus.SCHEDULED, JobStatus.CANCELED}
+    ),
+    JobStatus.IN_PROGRESS: frozenset({JobStatus.COMPLETE, JobStatus.CANCELED}),
+    JobStatus.COMPLETE: frozenset({JobStatus.INVOICED, JobStatus.IN_PROGRESS}),
+    JobStatus.INVOICED: frozenset({JobStatus.CLOSED}),
+    JobStatus.CLOSED: frozenset(),
+    JobStatus.CANCELED: frozenset({JobStatus.UNSCHEDULED}),
+}
+
+# Statuses a dispatcher considers "on the board" -- i.e. still needing attention.
+OPEN_JOB_STATUSES: frozenset[JobStatus] = frozenset(
+    {
+        JobStatus.UNSCHEDULED,
+        JobStatus.SCHEDULED,
+        JobStatus.EN_ROUTE,
+        JobStatus.IN_PROGRESS,
+    }
+)
+
+
+class LineItemKind(enum.StrEnum):
+    LABOR = "labor"
+    PART = "part"
