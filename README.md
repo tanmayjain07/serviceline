@@ -5,10 +5,10 @@ Multi-tenant field service scheduling for HVAC and plumbing contractors.
 
 [![CI](https://github.com/tanmayjain70/serviceline/actions/workflows/ci.yml/badge.svg)](https://github.com/tanmayjain70/serviceline/actions/workflows/ci.yml)
 
-> **Milestone 1 of 5 — the foundation.** Multi-tenancy with database-enforced
-> isolation, authentication, role-based access control, team invitations, seat
-> limits, and an append-only audit log. Customers, jobs, and the dispatch board
-> arrive in milestone 2.
+> **Milestones 1–2 of 5.** Multi-tenancy with database-enforced isolation,
+> authentication and role-based access control, team invitations, an append-only
+> audit log — plus customers, service addresses, jobs, and a drag-and-drop
+> dispatch board. The technician mobile view arrives in milestone 3.
 
 ---
 
@@ -120,6 +120,22 @@ the database layer, the API layer, and writes. Highlights:
 - Invitations with hashed, single-use, 7-day tokens
 - Seat limits per plan, counting pending invitations, with a 402 upgrade prompt
 - A company can never remove its last active owner
+
+**Customers & jobs**
+- Customers with several service addresses, searchable by name, phone or street
+- **Scheduling timezone lives on the service address, not the company** — one
+  target customer works both sides of the Ohio/Indiana line, where half of
+  Indiana observes Central
+- Jobs with a per-tenant number allocated under a row lock, a status machine
+  enforced server-side, and separate internal vs customer-visible notes
+- One **lead** technician per job plus helpers, enforced by a partial unique index
+
+**Dispatch board**
+- Crew as columns, days as rows, drag to assign and reschedule
+- Double-booking is **reported, not forbidden** — dispatchers squeeze callbacks
+  between installs on purpose, so the clash is named and can be overridden
+- Two jobs in different timezones do not falsely collide: overlap is computed on
+  instants, never on wall clocks
 
 **Audit**
 - Append-only log with field-level before/after diffs, actor, IP, and user agent
@@ -243,14 +259,16 @@ serviceline/
 | Milestone | Scope | Status |
 |---|---|---|
 | **1** | Tenancy, auth, RBAC, invitations, audit log | ✅ **Done** |
-| 2 | Customers, service addresses, jobs, dispatch board | Next |
-| 3 | Technician mobile view, offline-resilient submits, photos, signatures | |
+| **2** | Customers, service addresses, jobs, dispatch board | ✅ **Done** |
+| 3 | Technician mobile view, offline-resilient submits, photos, signatures | Next |
 | 4 | Invoicing with gapless numbering, PDF, reporting | |
 | 5 | Stripe billing, super-admin, read-only impersonation | |
 
-Milestone 2 moves the authoritative timezone from the company to the **service
+Milestone 2 moved the authoritative timezone from the company to the **service
 address** — one target customer works both sides of the Ohio/Indiana line, where
-half of Indiana observes Central time.
+half of Indiana observes Central time. That single decision is why a job stores
+its booked window twice: once as the local promise made to the customer, once as
+UTC instants, because overlap cannot be computed on wall clocks.
 
 That decision, and seventeen others that shaped the schema, came out of
 questioning the brief rather than building it as written:
