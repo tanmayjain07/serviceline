@@ -14,14 +14,18 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Overview', roles: ['owner', 'dispatcher', 'technician', 'accountant'] },
+  // Technicians get Jobs but not Customers or the board: they see their own
+  // work, not the customer book or anybody else's schedule.
+  { to: '/jobs', label: 'Jobs', roles: ['owner', 'dispatcher', 'technician', 'accountant'] },
+  { to: '/dispatch', label: 'Dispatch board', roles: ['owner', 'dispatcher'] },
+  { to: '/customers', label: 'Customers', roles: ['owner', 'dispatcher', 'accountant'] },
   { to: '/team', label: 'Team', roles: ['owner', 'dispatcher', 'accountant'] },
   { to: '/settings', label: 'Company settings', roles: ['owner'] },
   { to: '/audit-log', label: 'Audit log', roles: ['owner'] },
 ]
 
-// Milestone 2 adds Customers, Jobs, and the Dispatch board here. Listing them
-// as disabled rather than hiding them keeps the shape of the product visible.
-const COMING_SOON = ['Customers', 'Jobs', 'Dispatch board', 'Invoices']
+// Listing what does not exist yet keeps the shape of the product visible.
+const COMING_SOON = ['Invoices', 'Reports']
 
 export default function Layout() {
   const { me, role, signOut, switchCompany } = useAuth()
@@ -99,13 +103,13 @@ export default function Layout() {
           ))}
 
           <p className="px-3 pt-5 pb-1 text-xs font-medium tracking-wide text-slate-400 uppercase">
-            Milestone 2
+            Later milestones
           </p>
           {COMING_SOON.map((label) => (
             <span
               key={label}
               className="block cursor-not-allowed rounded-lg px-3 py-2 text-sm text-slate-300"
-              title="Not built yet — arrives in milestone 2"
+              title="Not built yet — arrives in a later milestone"
             >
               {label}
             </span>

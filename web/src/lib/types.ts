@@ -157,3 +157,171 @@ export const TRADE_LABELS: Record<TradeType, string> = {
   multi_trade: 'Multi-trade',
   other: 'Other',
 }
+
+/* -------------------------------------------------------------------------- */
+/* Milestone 2: customers, addresses, jobs                                     */
+/* -------------------------------------------------------------------------- */
+
+export type CustomerKind = 'residential' | 'company'
+
+export type JobType =
+  | 'install'
+  | 'repair'
+  | 'maintenance'
+  | 'inspection'
+  | 'emergency'
+  | 'other'
+
+export type JobPriority = 'low' | 'normal' | 'high' | 'emergency'
+
+export type JobStatus =
+  | 'unscheduled'
+  | 'scheduled'
+  | 'en_route'
+  | 'in_progress'
+  | 'complete'
+  | 'invoiced'
+  | 'closed'
+  | 'canceled'
+
+export type LineItemKind = 'labor' | 'part'
+
+export interface ServiceAddress {
+  id: string
+  customer_id: string
+  label: string | null
+  line1: string
+  line2: string | null
+  city: string
+  state: string
+  postal_code: string
+  /** Authoritative for scheduling at this address — not the company's zone. */
+  timezone: string
+  notes: string | null
+  is_primary: boolean
+  is_active: boolean
+  one_line: string
+  created_at: string
+}
+
+export interface Customer {
+  id: string
+  kind: CustomerKind
+  name: string
+  contact_name: string | null
+  phone: string | null
+  email: string | null
+  notes: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface CustomerDetail extends Customer {
+  addresses: ServiceAddress[]
+  open_job_count: number
+}
+
+export interface JobAssignment {
+  membership_id: string
+  is_lead: boolean
+  full_name: string | null
+  role: Role | null
+}
+
+export interface JobLineItem {
+  id: string
+  kind: LineItemKind
+  description: string
+  quantity: string
+  sort_order: number
+  /** Absent entirely for technicians — the API omits the field, not just the value. */
+  unit_price_cents?: number | null
+  total_cents?: number | null
+}
+
+export interface JobSummary {
+  id: string
+  job_number: string
+  title: string
+  status: JobStatus
+  priority: JobPriority
+  job_type: JobType
+  customer_id: string
+  customer_name: string | null
+  address_one_line: string | null
+  address_timezone: string | null
+  scheduled_date: string | null
+  arrival_window_start: string | null
+  arrival_window_end: string | null
+  window_start_utc: string | null
+  window_end_utc: string | null
+  lead_membership_id: string | null
+  lead_name: string | null
+  helper_count: number
+}
+
+export interface JobDetail extends JobSummary {
+  description: string | null
+  customer_notes: string | null
+  internal_notes: string | null
+  service_address_id: string
+  assignments: JobAssignment[]
+  line_items: JobLineItem[]
+  completed_at: string | null
+  canceled_at: string | null
+  created_at: string
+  /** Present only for roles allowed to see money. */
+  total_cents?: number | null
+}
+
+export interface ScheduleConflict {
+  detail: string
+  conflicts: Array<{
+    id: string
+    job_number: string
+    title: string
+    scheduled_date: string | null
+    arrival_window_start: string | null
+    arrival_window_end: string | null
+  }>
+}
+
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
+  unscheduled: 'Unscheduled',
+  scheduled: 'Scheduled',
+  en_route: 'En route',
+  in_progress: 'In progress',
+  complete: 'Complete',
+  invoiced: 'Invoiced',
+  closed: 'Closed',
+  canceled: 'Canceled',
+}
+
+/** Which statuses a job may move to. Mirrors JOB_STATUS_TRANSITIONS on the
+ *  server, which is the authority — this only decides which buttons to draw. */
+export const JOB_STATUS_NEXT: Record<JobStatus, JobStatus[]> = {
+  unscheduled: ['scheduled', 'canceled'],
+  scheduled: ['unscheduled', 'en_route', 'canceled'],
+  en_route: ['in_progress', 'scheduled', 'canceled'],
+  in_progress: ['complete', 'canceled'],
+  complete: ['invoiced', 'in_progress'],
+  invoiced: ['closed'],
+  closed: [],
+  canceled: ['unscheduled'],
+}
+
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
+  install: 'Install',
+  repair: 'Repair',
+  maintenance: 'Maintenance',
+  inspection: 'Inspection',
+  emergency: 'Emergency',
+  other: 'Other',
+}
+
+export const JOB_PRIORITY_LABELS: Record<JobPriority, string> = {
+  low: 'Low',
+  normal: 'Normal',
+  high: 'High',
+  emergency: 'Emergency',
+}

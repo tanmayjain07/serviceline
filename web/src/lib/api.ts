@@ -36,6 +36,15 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly detail: string,
+    /**
+     * The parsed error body, when there was one.
+     *
+     * Most failures need only a message, but some carry structure the UI has to
+     * act on -- a scheduling conflict returns the jobs that clash so the board
+     * can name them and offer to proceed. Flattening every error to a string
+     * would throw that away.
+     */
+    public readonly body?: unknown,
   ) {
     super(detail)
     this.name = 'ApiError'
@@ -152,21 +161,27 @@ export async function request<T>(
 
   if (!response.ok) {
     let detail = response.statusText
+    let body: unknown
     try {
       const payload = await response.json()
+      body = payload?.detail ?? payload
       if (typeof payload?.detail === 'string') {
         detail = payload.detail
       } else if (Array.isArray(payload?.detail)) {
         // FastAPI validation errors: surface the first message rather than the
         // raw pydantic structure, which is unreadable to a user.
         detail = payload.detail[0]?.msg ?? detail
+      } else if (typeof payload?.detail?.detail === 'string') {
+        // A structured error: the message sits inside the payload the caller
+        // also needs, as with a scheduling conflict.
+        detail = payload.detail.detail
       }
     } catch {
       /* body was not JSON; keep the status text */
     }
 
     if (response.status === 401 && !options.anonymous) tokens.clear()
-    throw new ApiError(response.status, detail)
+    throw new ApiError(response.status, detail, body)
   }
 
   if (response.status === 204) return undefined as T

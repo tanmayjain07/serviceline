@@ -10,6 +10,11 @@ import AcceptInvite from './pages/AcceptInvite'
 import AuditLog from './pages/AuditLog'
 import ChooseCompany from './pages/ChooseCompany'
 import Login from './pages/Login'
+import CustomerDetail from './pages/CustomerDetail'
+import Customers from './pages/Customers'
+import DispatchBoard from './pages/DispatchBoard'
+import JobDetail from './pages/JobDetail'
+import Jobs from './pages/Jobs'
 import Overview from './pages/Overview'
 import Settings from './pages/Settings'
 import Signup from './pages/Signup'
@@ -85,6 +90,46 @@ export default function App() {
         }
       >
         <Route path="/" element={<Overview />} />
+        <Route
+          path="/jobs"
+          element={
+            <Protected roles={['owner', 'dispatcher', 'technician', 'accountant']}>
+              <Jobs />
+            </Protected>
+          }
+        />
+        <Route
+          path="/jobs/:jobId"
+          element={
+            <Protected roles={['owner', 'dispatcher', 'technician', 'accountant']}>
+              <JobDetail />
+            </Protected>
+          }
+        />
+        <Route
+          path="/dispatch"
+          element={
+            <Protected roles={['owner', 'dispatcher']}>
+              <DispatchBoard />
+            </Protected>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <Protected roles={['owner', 'dispatcher', 'accountant']}>
+              <Customers />
+            </Protected>
+          }
+        />
+        <Route
+          path="/customers/:customerId"
+          element={
+            <Protected roles={['owner', 'dispatcher', 'accountant']}>
+              <CustomerDetail />
+            </Protected>
+          }
+        />
         <Route
           path="/team"
           element={
