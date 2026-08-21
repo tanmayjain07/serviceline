@@ -11,7 +11,6 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
-    Enum,
     ForeignKey,
     Integer,
     Numeric,
@@ -23,7 +22,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, Timestamps, UUIDPrimaryKey
-from app.models.enums import JobPriority, JobStatus, JobType, LineItemKind
+from app.models.enums import (
+    JobPriority,
+    JobStatus,
+    JobType,
+    LineItemKind,
+    enum_column,
+)
 
 if TYPE_CHECKING:
     from app.models.customer import Customer, ServiceAddress
@@ -57,17 +62,17 @@ class Job(UUIDPrimaryKey, Timestamps, Base):
     )
 
     job_type: Mapped[JobType] = mapped_column(
-        Enum(JobType, native_enum=False, length=20, validate_strings=True),
+        enum_column(JobType),
         nullable=False,
         default=JobType.REPAIR,
     )
     priority: Mapped[JobPriority] = mapped_column(
-        Enum(JobPriority, native_enum=False, length=20, validate_strings=True),
+        enum_column(JobPriority),
         nullable=False,
         default=JobPriority.NORMAL,
     )
     status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus, native_enum=False, length=20, validate_strings=True),
+        enum_column(JobStatus),
         nullable=False,
         default=JobStatus.UNSCHEDULED,
         index=True,
@@ -197,7 +202,7 @@ class JobLineItem(UUIDPrimaryKey, Timestamps, Base):
     )
 
     kind: Mapped[LineItemKind] = mapped_column(
-        Enum(LineItemKind, native_enum=False, length=20, validate_strings=True),
+        enum_column(LineItemKind),
         nullable=False,
     )
     description: Mapped[str] = mapped_column(String(255), nullable=False)

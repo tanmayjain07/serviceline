@@ -84,7 +84,7 @@ Full reasoning and the trade-offs, including the two deliberate exceptions:
 ## Proof
 
 ```
-87 passed in 63s          pytest, 92% coverage, green in CI
+112 passed in 71s         pytest, green in CI
 33/33 checks passed       local end-to-end smoke test over real HTTP
 27/27 checks passed       against the deployed demo, over the public internet
 ruff check: clean         ruff format: clean
@@ -172,7 +172,7 @@ App on <http://localhost:5173>, proxying `/api` to the backend.
 
 ```powershell
 cd api
-.\.venv\Scripts\python.exe -m pytest            # 87 tests
+.\.venv\Scripts\python.exe -m pytest            # 112 tests
 cd ..
 .\scripts\smoke-test.ps1                        # 33 live checks
 ```
@@ -208,7 +208,7 @@ serviceline/
 │   │   ├── services/           audit, seat limits, slugs
 │   │   ├── deps.py             session + auth + RBAC dependencies
 │   │   └── main.py             app factory + startup isolation check
-│   ├── tests/                  87 tests
+│   ├── tests/                  112 tests
 │   ├── Dockerfile              pinned runtime, non-root
 │   └── docker-entrypoint.sh    migrate -> seed -> serve
 ├── web/

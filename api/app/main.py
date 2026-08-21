@@ -21,7 +21,15 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.db import engine
 from app.models import RLS_TABLES
-from app.routers import audit, auth, invitations, memberships, tenants
+from app.routers import (
+    audit,
+    auth,
+    customers,
+    invitations,
+    jobs,
+    memberships,
+    tenants,
+)
 
 logger = logging.getLogger("serviceline")
 
@@ -123,6 +131,8 @@ def create_app() -> FastAPI:
     app.include_router(memberships.router, prefix=prefix)
     app.include_router(invitations.router, prefix=prefix)
     app.include_router(audit.router, prefix=prefix)
+    app.include_router(customers.router, prefix=prefix)
+    app.include_router(jobs.router, prefix=prefix)
 
     @app.get("/", include_in_schema=False)
     def root() -> RedirectResponse:

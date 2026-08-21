@@ -5,11 +5,11 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, Timestamps, UUIDPrimaryKey
-from app.models.enums import CustomerKind
+from app.models.enums import CustomerKind, enum_column
 
 if TYPE_CHECKING:
     from app.models.job import Job
@@ -23,7 +23,7 @@ class Customer(UUIDPrimaryKey, Timestamps, Base):
     )
 
     kind: Mapped[CustomerKind] = mapped_column(
-        Enum(CustomerKind, native_enum=False, length=20, validate_strings=True),
+        enum_column(CustomerKind),
         nullable=False,
         default=CustomerKind.RESIDENTIAL,
     )

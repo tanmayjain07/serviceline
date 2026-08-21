@@ -22,6 +22,15 @@ INVITE_TOKEN_GUC = "app.invite_token_hash"
 
 engine = create_engine(
     settings.database_url,
+    # Pin the session timezone to UTC.
+    #
+    # timestamptz columns are stored as instants, but psycopg renders them on
+    # read using the *session's* timezone -- which defaults to the server's
+    # local zone. Without this, the same API returns "2026-08-14T12:00:00+00:00"
+    # when deployed in London and "2026-08-14T17:30:00+05:30" on a laptop in
+    # India. Same instant, different string, and any client comparing them as
+    # text is wrong.
+    connect_args={"options": "-c timezone=utc"},
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
